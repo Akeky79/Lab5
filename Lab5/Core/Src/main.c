@@ -46,6 +46,8 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
+uint8_t button = 0;
+uint8_t CheckButton = 1;
 uint8_t Hz = 0;
 uint8_t State = 0;
 uint8_t RxBuffer[10];
@@ -69,6 +71,7 @@ uint8_t ledon[]   = "LedOn\r\n";
 uint8_t ledoff[]  = "LedOff\r\n";
 uint8_t Press[]   = "Button Pressed\r\n";
 uint8_t unPress[] = "Button Unpressed\r\n";
+uint16_t CheckButtonB1 = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -129,96 +132,102 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-//	  DummyTask();
-//	  UARTPollingMethod();
-	  UARTInterrupConfig();
-	  static uint32_t timestamp = 0;
-	  if (HAL_GetTick() > timestamp)
-	  {
-		  timestamp = HAL_GetTick()+100;
-		  HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
-	  }
-	  switch(State)
-	  {
-	  case 0:
-		  HAL_UART_Transmit_IT(&huart2, Menu , strlen((char*)Menu) );
-		  State = 1;
-		  break;
-	  case 1:
-		  if(RxBuffer[0] == 48)
-		  {
-			  State = 2;
+  	  UARTInterrupConfig();
+  	  static uint32_t timestamp = 0;
+  	  if (HAL_GetTick() > timestamp)
+  	  {
+  		  timestamp = HAL_GetTick()+100;
+//	  		  HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+  	  }
+  	  switch(State)
+  	  {
+  	  case 0:
+  		  HAL_UART_Transmit_IT(&huart2, Menu , strlen((char*)Menu) );
+  		  State = 1;
+  		  break;
+  	  case 1:
+  		  if(RxBuffer[0] == 48)
+  		  {
+  			  State = 2;
 
-		  }
-		  else if(RxBuffer[0] == 49)
-		  {
-			  State = 4;
+  		  }
+  		  else if(RxBuffer[0] == 49)
+  		  {
+  			  State = 4;
 
-		  }
-		  break;
-	  case 2:
-		  HAL_UART_Transmit_IT(&huart2, Menu1 , strlen((char*)Menu1));
-		  State = 3;
-		  break;
-	  case 3:
-		  if(RxBuffer[0] == 97)
-		  {
+  		  }
+  		  break;
+  	  case 2:
+  		  HAL_UART_Transmit_IT(&huart2, Menu1 , strlen((char*)Menu1));
+  		  State = 3;
+  		  break;
+  	  case 3:
+  		  if(RxBuffer[0] == 97)
+  		  {
 
-			  Hz = Hz + 1;
-			  State = 3;
-		  }
-		  else if(RxBuffer[0] == 115)
-		  {
+  			  Hz = Hz + 1;
+  			  State = 3;
+  		  }
+  		  else if(RxBuffer[0] == 115)
+  		  {
 
-			  Hz = Hz - 1;
-			  State = 3;
-		  }
-		  else if(RxBuffer[0] == 100)
-		  {
+  			  Hz = Hz - 1;
+  			  State = 3;
+  		  }
+  		  else if(RxBuffer[0] == 100)
+  		  {
 
-			  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 1)
-			  {
-				  HAL_UART_Transmit_IT(&huart2, ledon , strlen((char*)ledon) );
-			  }
-			  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 0)
-			  {
-				  HAL_UART_Transmit_IT(&huart2, ledoff , strlen((char*)ledoff) );
-			  }
-			  State = 3;
-		  }
-		  else if(RxBuffer[0] == 120)
-		  {
+  			  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 1 && CheckButton == 0 )
+  			  {
+  				  CheckButton = 1;
+  				  HAL_UART_Transmit(&huart2, ledon , strlen((char*)ledon),50 );
+  				  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, RESET);
+  			  }
+  			  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 0 && CheckButton == 0)
+  			  {
+  				  CheckButton = 1;
+  				  HAL_UART_Transmit(&huart2, ledoff , strlen((char*)ledoff),50 );
+  				  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, SET);
+  			  }
+  			  State = 3;
+  		  }
+  		  else if(RxBuffer[0] == 120)
+  		  {
 
-			  State = 0;
-		  }
-		  else
-		  {
-			  State = 3;
-		  }
-		  break;
-	  case 4:
-		  HAL_UART_Transmit_IT(&huart2, Menu2 , strlen((char*)Menu2) );
-		  State = 5;
-		  break;
-	  case 5:
-		  if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
-		  {
-			  HAL_UART_Transmit_IT(&huart2, Press , strlen((char*)Press) );
-			  State = 4;
-		  }
-		  else if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
-		  {
-			  HAL_UART_Transmit_IT(&huart2, unPress , strlen((char*)unPress) );
-			  State = 4;
-		  }
-		  else if(RxBuffer[0] == 120)
-		  {
+  			  State = 0;
+  		  }
+  		  else
+  		  {
+  			  State = 3;
+  		  }
+  		  break;
+  	  case 4:
+  		  HAL_UART_Transmit_IT(&huart2, Menu2 , strlen((char*)Menu2) );
+  		  State = 5;
+  		  break;
+  	  case 5:
+  		  button = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+  		  if(button == 1 && CheckButton == 0)
+  		  {
+  			  CheckButton = 1;
+  			  HAL_UART_Transmit(&huart2, Press , strlen((char*)Press),50 );
+  			  State = 4;
+  		  }
+  		  else if(button == 0 && CheckButton == 0)
+  		  {
+  			  CheckButton = 1;
+  			  HAL_UART_Transmit(&huart2, unPress , strlen((char*)unPress),50 );
+  			  State = 4;
+  		  }
+  		  else if(RxBuffer[0] == 120)
+  		  {
 
-			  State = 0;
-		  }
-		  break;
+  			  State = 0;
+  		  }
+  		  break;
 
-	  }
+
+  	  }
 
     /* USER CODE BEGIN 3 */
   }
@@ -287,7 +296,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 57600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -393,6 +402,7 @@ static void MX_GPIO_Init(void)
 void UARTInterrupConfig()
 {
 	HAL_UART_Receive_IT(&huart2,RxBuffer,1);
+
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef*huart)
@@ -400,9 +410,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef*huart)
 	if(huart == &huart2)
 	{
 		RxBuffer[1] = '\0';
-
+		CheckButton = 0;
 		sprintf((char*)TxBuffer,"Received : %s\r\n",RxBuffer);
-		HAL_UART_Transmit_IT(&huart2,TxBuffer,strlen((char*)TxBuffer));
+		HAL_UART_Transmit(&huart2,TxBuffer,strlen((char*)TxBuffer),50);
 
 		HAL_UART_Receive_IT(&huart2,RxBuffer,1);
 	}
