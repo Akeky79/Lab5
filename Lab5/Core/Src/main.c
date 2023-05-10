@@ -46,9 +46,29 @@ DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
-uint8_t RxBuffer[20];
+uint8_t Hz = 0;
+uint8_t State = 0;
+uint8_t RxBuffer[10];
 uint8_t TxBuffer[40];
-
+uint8_t Button[1];
+uint8_t Menu[] =
+		"Press the number of choise \r\n"
+		"      0 LED Control        \r\n"
+		"      1 Button Status      \r\n";
+uint8_t Menu1[] =
+		"        LED Control        \r\n"
+		"     a : Speed Up +1 Hz    \r\n"
+		"     s : Speed Down -1 Hz  \r\n"
+		"     d : On / Off LED      \r\n"
+		"     x : Prevoius menus    \r\n";
+uint8_t Menu2[] =
+		"        Button Status      \r\n"
+		"     show button status B1 \r\n"
+		"     x : Prevoius menus    \r\n";
+uint8_t ledon[]   = "LedOn\r\n";
+uint8_t ledoff[]  = "LedOff\r\n";
+uint8_t Press[]   = "Button Pressed\r\n";
+uint8_t unPress[] = "Button Unpressed\r\n";
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,9 +77,9 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-void UARTPollingMethod();
-void DummyTrak();
-void UARTInterruptConfig();
+//void UARTPollingMethod();
+//void DummyTrak();
+//void UARTInterruptConfig();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -98,9 +118,9 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t text[] = "HELLO FIBO";
-  HAL_UART_Transmit(&huart2, text , 11 , 10);
-  UARTInterrupConfig();
+//  uint8_t text[] = "HELLO FIBO";
+//  HAL_UART_Transmit(&huart2, text , 11 , 10);
+//  UARTInterrupConfig();
 
   /* USER CODE END 2 */
 
@@ -109,7 +129,97 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  DummyTask();
+//	  DummyTask();
+//	  UARTPollingMethod();
+	  UARTInterrupConfig();
+	  static uint32_t timestamp = 0;
+	  if (HAL_GetTick() > timestamp)
+	  {
+		  timestamp = HAL_GetTick()+100;
+		  HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+	  }
+	  switch(State)
+	  {
+	  case 0:
+		  HAL_UART_Transmit_IT(&huart2, Menu , strlen((char*)Menu) );
+		  State = 1;
+		  break;
+	  case 1:
+		  if(RxBuffer[0] == 48)
+		  {
+			  State = 2;
+
+		  }
+		  else if(RxBuffer[0] == 49)
+		  {
+			  State = 4;
+
+		  }
+		  break;
+	  case 2:
+		  HAL_UART_Transmit_IT(&huart2, Menu1 , strlen((char*)Menu1));
+		  State = 3;
+		  break;
+	  case 3:
+		  if(RxBuffer[0] == 97)
+		  {
+
+			  Hz = Hz + 1;
+			  State = 3;
+		  }
+		  else if(RxBuffer[0] == 115)
+		  {
+
+			  Hz = Hz - 1;
+			  State = 3;
+		  }
+		  else if(RxBuffer[0] == 100)
+		  {
+
+			  if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 1)
+			  {
+				  HAL_UART_Transmit_IT(&huart2, ledon , strlen((char*)ledon) );
+			  }
+			  else if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) == 0)
+			  {
+				  HAL_UART_Transmit_IT(&huart2, ledoff , strlen((char*)ledoff) );
+			  }
+			  State = 3;
+		  }
+		  else if(RxBuffer[0] == 120)
+		  {
+
+			  State = 0;
+		  }
+		  else
+		  {
+			  State = 3;
+		  }
+		  break;
+	  case 4:
+		  HAL_UART_Transmit_IT(&huart2, Menu2 , strlen((char*)Menu2) );
+		  State = 5;
+		  break;
+	  case 5:
+		  if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1)
+		  {
+			  HAL_UART_Transmit_IT(&huart2, Press , strlen((char*)Press) );
+			  State = 4;
+		  }
+		  else if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 0)
+		  {
+			  HAL_UART_Transmit_IT(&huart2, unPress , strlen((char*)unPress) );
+			  State = 4;
+		  }
+		  else if(RxBuffer[0] == 120)
+		  {
+
+			  State = 0;
+		  }
+		  break;
+
+	  }
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -269,32 +379,32 @@ static void MX_GPIO_Init(void)
 //		HAL_UART_Transmit(&huart2,TxBuffer,strlen((char*)TxBuffer),10);
 //	}
 //}
-//
-void DummyTask()
-{
-	static uint32_t timestamp = 0;
-	if(HAL_GetTick()>=timestamp)
-	{
-		timestamp = HAL_GetTick()+100;
-		HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
-	}
-}
+
+//void DummyTask()
+//{
+//	static uint32_t timestamp = 0;
+//	if(HAL_GetTick()>=timestamp)
+//	{
+//		timestamp = HAL_GetTick()+100;
+//		HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
+//	}
+//}
 
 void UARTInterrupConfig()
 {
-	HAL_UART_Receive_IT(&huart2,RxBuffer,10);
+	HAL_UART_Receive_IT(&huart2,RxBuffer,1);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef*huart)
 {
 	if(huart == &huart2)
 	{
-		RxBuffer[10] = '\0';
+		RxBuffer[1] = '\0';
 
 		sprintf((char*)TxBuffer,"Received : %s\r\n",RxBuffer);
 		HAL_UART_Transmit_IT(&huart2,TxBuffer,strlen((char*)TxBuffer));
 
-		HAL_UART_Receive_IT(&huart2,RxBuffer,10);
+		HAL_UART_Receive_IT(&huart2,RxBuffer,1);
 	}
 }
 /* USER CODE END 4 */
